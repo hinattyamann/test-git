@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import PdfDocumentViewer from "@/components/PdfDocumentViewer";
 import { getViewableFileType } from "@/lib/viewable-files";
 import type {
   ApiErrorResponse,
@@ -170,7 +171,7 @@ export default function PdfViewer({ path }: PdfViewerProps) {
       </div>
 
       <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        {frameLoading && (
+        {frameLoading && fileType?.kind === "image" && (
           <div className="absolute inset-0 flex items-center justify-center bg-white text-sm font-medium text-slate-500">
             プレビューを読み込み中です...
           </div>
@@ -190,13 +191,12 @@ export default function PdfViewer({ path }: PdfViewerProps) {
               }}
             />
           </div>
+        ) : fileType?.kind === "pdf" ? (
+          <PdfDocumentViewer src={rawFileUrl} title={file?.name || fileName} />
         ) : (
-          <iframe
-            src={rawFileUrl}
-            title={file?.name || fileName}
-            className="h-[76vh] min-h-[520px] w-full border-0 bg-slate-100"
-            onLoad={() => setFrameLoading(false)}
-          />
+          <div className="flex min-h-[520px] items-center justify-center bg-slate-100 p-6 text-sm font-medium text-slate-500">
+            このファイルはプレビューできません。
+          </div>
         )}
       </div>
     </div>
