@@ -179,7 +179,12 @@ export default function PdfDocumentViewer({
       }
 
       const data = await response.arrayBuffer();
-      loadingTask = pdfjs.getDocument({ data });
+      loadingTask = pdfjs.getDocument({
+        data,
+        cMapPacked: true,
+        cMapUrl: "/pdfjs/cmaps/",
+        standardFontDataUrl: "/pdfjs/standard_fonts/",
+      });
       loadedDocument = await loadingTask.promise;
 
       if (!canceled) {
