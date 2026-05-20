@@ -2,6 +2,7 @@ import type { NextAuthRequest } from "next-auth";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getRepositoryRawFile, GitHubApiError } from "@/lib/github";
+import { getViewableFileType, supportedFileLabels } from "@/lib/viewable-files";
 
 export const dynamic = "force-dynamic";
 
@@ -25,20 +26,26 @@ export const GET = auth(async function GET(request: NextAuthRequest) {
       );
     }
 
-    if (!path.toLowerCase().endsWith(".pdf")) {
+    const fileType = getViewableFileType(path);
+
+    if (!fileType) {
       return NextResponse.json(
-        { message: "PDF ファイルのみ閲覧できます。" },
+        {
+          message: `対応していないファイル形式です。対応形式: ${supportedFileLabels.join(
+            " / "
+          )}`,
+        },
         { status: 400 }
       );
     }
 
     const { buffer } = await getRepositoryRawFile(path);
-    const fileName = path.split("/").pop() || "exam.pdf";
+    const fileName = path.split("/").pop() || `exam.${fileType.extension}`;
     const encodedFileName = encodeURIComponent(fileName);
 
     return new NextResponse(buffer, {
       headers: {
-        "Content-Type": "application/pdf",
+        "Content-Type": fileType.mimeType,
         "Content-Disposition": `${
           download ? "attachment" : "inline"
         }; filename*=UTF-8''${encodedFileName}`,
@@ -56,7 +63,7 @@ export const GET = auth(async function GET(request: NextAuthRequest) {
     }
 
     return NextResponse.json(
-      { message: "PDF の取得中にエラーが発生しました。" },
+      { message: "ファイルの取得中にエラーが発生しました。" },
       { status: 500 }
     );
   }
