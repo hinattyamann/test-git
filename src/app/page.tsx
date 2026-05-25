@@ -28,49 +28,22 @@ export default async function HomePage() {
       <Header />
 
       <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <div className="min-w-0">
-            <div className="mb-5 inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
-              過去問ライブラリ
-            </div>
+        <div className="mx-auto max-w-3xl text-center">
+          {/* <div className="mb-5 inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">
+            過去問ライブラリ
+          </div> */}
 
-            <h1 className="max-w-3xl text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
-              test.git
-            </h1>
+          <h1 className="text-4xl font-black leading-tight text-slate-950 sm:text-5xl">
+            test.git
+          </h1>
 
-            <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-              専攻科の過去問を検索・閲覧。
-            </p>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
+            専攻科の過去問を検索・閲覧。
+          </p>
 
-            <div className="mt-8 max-w-3xl">
-              <SearchBox />
-            </div>
+          <div className="mx-auto mt-8 max-w-3xl text-left">
+            <SearchBox />
           </div>
-
-          <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-bold text-slate-500">現在のライブラリ</p>
-            <dl className="mt-4 divide-y divide-slate-200 border-y border-slate-200">
-              <div className="flex items-center justify-between py-4">
-                <dt className="text-sm font-semibold text-slate-500">学科</dt>
-                <dd className="text-3xl font-black text-slate-950">
-                  {departments.length}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between py-4">
-                <dt className="text-sm font-semibold text-slate-500">形式</dt>
-                <dd className="text-2xl font-black text-red-600">PDF/画像</dd>
-              </div>
-            </dl>
-
-            <Link
-              href="/browse"
-              className="focus-ring mt-5 flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-bold text-white transition hover:bg-slate-800"
-            >
-              フォルダ一覧を開く
-            </Link>
-
-            <p className="mt-4 text-sm font-medium text-slate-500">GitHub連携</p>
-          </aside>
         </div>
 
         <section className="mt-12">
@@ -80,7 +53,7 @@ export default async function HomePage() {
               <h2 className="mt-1 text-2xl font-black text-slate-950">
                 学科一覧
               </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">学年・科目別</p>
+              {/* <p className="mt-2 text-sm leading-6 text-slate-500">学年・科目別</p> */}
             </div>
 
             <Link
