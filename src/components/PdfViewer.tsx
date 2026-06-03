@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PdfDocumentViewer from "@/components/PdfDocumentViewer";
 import { getViewableFileType } from "@/lib/viewable-files";
@@ -14,10 +15,70 @@ type PdfViewerProps = {
   path: string;
 };
 
+type SiblingNavControlProps = {
+  direction: "previous" | "next";
+  file?: GitHubContentItem;
+  loading: boolean;
+};
+
+function buildViewerHref(path: string) {
+  return `/viewer?path=${encodeURIComponent(path)}`;
+}
+
+function SiblingNavControl({
+  direction,
+  file,
+  loading,
+}: SiblingNavControlProps) {
+  const isPrevious = direction === "previous";
+  const arrow = isPrevious ? "←" : "→";
+  const emptyLabel = loading
+    ? "読み込み中"
+    : isPrevious
+    ? "前はありません"
+    : "次はありません";
+  const label = file ? file.name : emptyLabel;
+  const baseClassName =
+    "focus-ring flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 text-sm font-bold transition sm:max-w-[17rem]";
+
+  if (!file) {
+    return (
+      <button
+        type="button"
+        disabled
+        className={`${baseClassName} cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400 ${
+          isPrevious ? "" : "justify-end"
+        }`}
+      >
+        {isPrevious && <span className="text-lg">{arrow}</span>}
+        <span className="min-w-0 truncate">{label}</span>
+        {!isPrevious && <span className="text-lg">{arrow}</span>}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={buildViewerHref(file.path)}
+      aria-label={`${isPrevious ? "前" : "次"}のファイル: ${file.name}`}
+      title={file.name}
+      className={`${baseClassName} border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 ${
+        isPrevious ? "" : "justify-end"
+      }`}
+    >
+      {isPrevious && <span className="text-lg">{arrow}</span>}
+      <span className="min-w-0 truncate">{label}</span>
+      {!isPrevious && <span className="text-lg">{arrow}</span>}
+    </Link>
+  );
+}
+
 export default function PdfViewer({ path }: PdfViewerProps) {
   const router = useRouter();
 
   const [file, setFile] = useState<GitHubContentItem | null>(null);
+  const [siblingFiles, setSiblingFiles] = useState<GitHubContentItem[]>([]);
+  const [siblingLoading, setSiblingLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [frameLoading, setFrameLoading] = useState(true);
   const [error, setError] = useState("");
@@ -31,9 +92,37 @@ export default function PdfViewer({ path }: PdfViewerProps) {
     return `/api/github/raw?path=${encodeURIComponent(path)}`;
   }, [path]);
 
+  const parentPath = useMemo(() => {
+    const segments = path.split("/").filter(Boolean);
+    segments.pop();
+
+    return segments.join("/");
+  }, [path]);
+
   const fileType = useMemo(() => {
     return getViewableFileType(file?.name || path);
   }, [file?.name, path]);
+
+  const currentSiblingIndex = useMemo(() => {
+    const currentPath = file?.path || path;
+
+    return siblingFiles.findIndex((siblingFile) => {
+      return siblingFile.path === currentPath;
+    });
+  }, [file?.path, path, siblingFiles]);
+
+  const previousFile =
+    currentSiblingIndex > 0 ? siblingFiles[currentSiblingIndex - 1] : undefined;
+  const nextFile =
+    currentSiblingIndex >= 0 && currentSiblingIndex < siblingFiles.length - 1
+      ? siblingFiles[currentSiblingIndex + 1]
+      : undefined;
+  const siblingPosition =
+    currentSiblingIndex >= 0
+      ? `${currentSiblingIndex + 1} / ${siblingFiles.length}`
+      : siblingLoading
+      ? "読み込み中"
+      : "同階層";
 
   useEffect(() => {
     let ignore = false;
@@ -49,6 +138,7 @@ export default function PdfViewer({ path }: PdfViewerProps) {
         setLoading(true);
         setFrameLoading(true);
         setError("");
+        setFile(null);
 
         const response = await fetch(
           `/api/github/contents?path=${encodeURIComponent(path)}`,
@@ -97,6 +187,65 @@ export default function PdfViewer({ path }: PdfViewerProps) {
       ignore = true;
     };
   }, [path]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadSiblingFiles() {
+      if (!path) {
+        setSiblingFiles([]);
+        setSiblingLoading(false);
+        return;
+      }
+
+      try {
+        setSiblingLoading(true);
+
+        const response = await fetch(
+          `/api/github/contents?path=${encodeURIComponent(parentPath)}`,
+          {
+            cache: "no-store",
+          }
+        );
+
+        const data = (await response.json()) as
+          | GitHubContentsApiResponse
+          | ApiErrorResponse;
+
+        if (!response.ok) {
+          throw new Error("message" in data ? data.message : "取得失敗");
+        }
+
+        const viewableFiles = "items" in data
+          ? data.items
+              .filter((item) => {
+                return item.type === "file" && getViewableFileType(item.name);
+              })
+              .sort((a, b) => a.name.localeCompare(b.name, "ja"))
+          : [];
+
+        if (!ignore) {
+          setSiblingFiles(viewableFiles);
+        }
+      } catch (error) {
+        console.error(error);
+
+        if (!ignore) {
+          setSiblingFiles([]);
+        }
+      } finally {
+        if (!ignore) {
+          setSiblingLoading(false);
+        }
+      }
+    }
+
+    loadSiblingFiles();
+
+    return () => {
+      ignore = true;
+    };
+  }, [parentPath, path]);
 
   if (loading) {
     return (
@@ -167,6 +316,24 @@ export default function PdfViewer({ path }: PdfViewerProps) {
               {(file.size / 1024 / 1024).toFixed(1)} MB
             </span>
           ) : null}
+        </div>
+
+        <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <SiblingNavControl
+            direction="previous"
+            file={previousFile}
+            loading={siblingLoading}
+          />
+
+          <div className="flex shrink-0 items-center justify-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+            {siblingPosition}
+          </div>
+
+          <SiblingNavControl
+            direction="next"
+            file={nextFile}
+            loading={siblingLoading}
+          />
         </div>
       </div>
 
