@@ -11,6 +11,7 @@ import type {
 type PdfDocumentViewerProps = {
   src: string;
   title: string;
+  rotation: number;
 };
 
 type PdfJsModule = typeof import("pdfjs-dist");
@@ -43,10 +44,12 @@ function useElementWidth() {
 function PdfPageCanvas({
   document,
   pageNumber,
+  rotation,
   width,
 }: {
   document: PDFDocumentProxy;
   pageNumber: number;
+  rotation: number;
   width: number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -91,10 +94,10 @@ function PdfPageCanvas({
 
       setRendering(true);
 
-      const baseViewport = currentPage.getViewport({ scale: 1 });
+      const baseViewport = currentPage.getViewport({ scale: 1, rotation });
       const pageWidth = Math.max(280, width - 24);
       const scale = pageWidth / baseViewport.width;
-      const viewport = currentPage.getViewport({ scale });
+      const viewport = currentPage.getViewport({ scale, rotation });
       const outputScale = Math.min(window.devicePixelRatio || 1, 2);
 
       canvas.width = Math.floor(viewport.width * outputScale);
@@ -128,7 +131,7 @@ function PdfPageCanvas({
       renderTask?.cancel();
       currentPage.cleanup();
     };
-  }, [page, width]);
+  }, [page, rotation, width]);
 
   return (
     <section className="mx-auto w-full max-w-5xl">
@@ -148,6 +151,7 @@ function PdfPageCanvas({
 }
 
 export default function PdfDocumentViewer({
+  rotation,
   src,
   title,
 }: PdfDocumentViewerProps) {
@@ -234,6 +238,7 @@ export default function PdfDocumentViewer({
               key={index + 1}
               document={pdfDocument}
               pageNumber={index + 1}
+              rotation={rotation}
               width={width}
             />
           ))}

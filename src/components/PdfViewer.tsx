@@ -3,7 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
+import {
+  FiArrowLeft,
+  FiArrowRight,
+  FiRotateCcw,
+  FiRotateCw,
+} from "react-icons/fi";
 import PdfDocumentViewer from "@/components/PdfDocumentViewer";
 import { getViewableFileType } from "@/lib/viewable-files";
 import type {
@@ -81,6 +86,7 @@ export default function PdfViewer({ path }: PdfViewerProps) {
   const [loading, setLoading] = useState(true);
   const [frameLoading, setFrameLoading] = useState(true);
   const [error, setError] = useState("");
+  const [rotation, setRotation] = useState(0);
 
   const fileName = useMemo(() => {
     if (!path) return "ファイル";
@@ -122,6 +128,12 @@ export default function PdfViewer({ path }: PdfViewerProps) {
       : siblingLoading
       ? "読み込み中"
       : "同階層";
+  const rotateLeft = () => {
+    setRotation((currentRotation) => (currentRotation + 270) % 360);
+  };
+  const rotateRight = () => {
+    setRotation((currentRotation) => (currentRotation + 90) % 360);
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -138,6 +150,7 @@ export default function PdfViewer({ path }: PdfViewerProps) {
         setFrameLoading(true);
         setError("");
         setFile(null);
+        setRotation(0);
 
         const response = await fetch(
           `/api/github/contents?path=${encodeURIComponent(path)}`,
@@ -296,6 +309,26 @@ export default function PdfViewer({ path }: PdfViewerProps) {
               戻る
             </button>
 
+            <button
+              type="button"
+              onClick={rotateLeft}
+              aria-label="左に90度回転"
+              className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+            >
+              <FiRotateCcw className="h-5 w-5" aria-hidden="true" />
+              左回転
+            </button>
+
+            <button
+              type="button"
+              onClick={rotateRight}
+              aria-label="右に90度回転"
+              className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+            >
+              <FiRotateCw className="h-5 w-5" aria-hidden="true" />
+              右回転
+            </button>
+
             <a
               href={`${rawFileUrl}&download=1`}
               className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
@@ -313,6 +346,11 @@ export default function PdfViewer({ path }: PdfViewerProps) {
           {file?.size ? (
             <span className="rounded-full bg-slate-100 px-3 py-1">
               {(file.size / 1024 / 1024).toFixed(1)} MB
+            </span>
+          ) : null}
+          {rotation ? (
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
+              {rotation}度回転
             </span>
           ) : null}
         </div>
@@ -349,7 +387,8 @@ export default function PdfViewer({ path }: PdfViewerProps) {
             <img
               src={rawFileUrl}
               alt={file?.name || fileName}
-              className="max-h-full max-w-full rounded-lg bg-white object-contain shadow-sm"
+              className="max-h-full max-w-full rounded-lg bg-white object-contain shadow-sm transition-transform"
+              style={{ transform: `rotate(${rotation}deg)` }}
               onLoad={() => setFrameLoading(false)}
               onError={() => {
                 setFrameLoading(false);
@@ -358,7 +397,11 @@ export default function PdfViewer({ path }: PdfViewerProps) {
             />
           </div>
         ) : fileType?.kind === "pdf" ? (
-          <PdfDocumentViewer src={rawFileUrl} title={file?.name || fileName} />
+          <PdfDocumentViewer
+            rotation={rotation}
+            src={rawFileUrl}
+            title={file?.name || fileName}
+          />
         ) : (
           <div className="flex min-h-[520px] items-center justify-center bg-slate-100 p-6 text-sm font-medium text-slate-500">
             このファイルはプレビューできません。
