@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FiArrowLeft, FiArrowRight } from "react-icons/fi";
 import PdfDocumentViewer from "@/components/PdfDocumentViewer";
 import { getViewableFileType } from "@/lib/viewable-files";
 import type {
@@ -31,15 +32,14 @@ function SiblingNavControl({
   loading,
 }: SiblingNavControlProps) {
   const isPrevious = direction === "previous";
-  const arrow = isPrevious ? "←" : "→";
-  const emptyLabel = loading
+  const Icon = isPrevious ? FiArrowLeft : FiArrowRight;
+  const label = loading
     ? "読み込み中"
     : isPrevious
-    ? "前はありません"
-    : "次はありません";
-  const label = file ? file.name : emptyLabel;
+    ? "前のファイル"
+    : "次のファイル";
   const baseClassName =
-    "focus-ring flex min-h-11 w-full items-center gap-3 rounded-xl border px-3 text-sm font-bold transition sm:max-w-[17rem]";
+    "focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold transition";
 
   if (!file) {
     return (
@@ -50,9 +50,9 @@ function SiblingNavControl({
           isPrevious ? "" : "justify-end"
         }`}
       >
-        {isPrevious && <span className="text-lg">{arrow}</span>}
-        <span className="min-w-0 truncate">{label}</span>
-        {!isPrevious && <span className="text-lg">{arrow}</span>}
+        {isPrevious && <Icon className="h-5 w-5" aria-hidden="true" />}
+        <span>{label}</span>
+        {!isPrevious && <Icon className="h-5 w-5" aria-hidden="true" />}
       </button>
     );
   }
@@ -60,15 +60,14 @@ function SiblingNavControl({
   return (
     <Link
       href={buildViewerHref(file.path)}
-      aria-label={`${isPrevious ? "前" : "次"}のファイル: ${file.name}`}
-      title={file.name}
+      aria-label={`${isPrevious ? "前" : "次"}のファイルへ移動`}
       className={`${baseClassName} border-slate-300 bg-white text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 ${
         isPrevious ? "" : "justify-end"
       }`}
     >
-      {isPrevious && <span className="text-lg">{arrow}</span>}
-      <span className="min-w-0 truncate">{label}</span>
-      {!isPrevious && <span className="text-lg">{arrow}</span>}
+      {isPrevious && <Icon className="h-5 w-5" aria-hidden="true" />}
+      <span>{label}</span>
+      {!isPrevious && <Icon className="h-5 w-5" aria-hidden="true" />}
     </Link>
   );
 }
