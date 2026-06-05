@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   FiArrowLeft,
   FiArrowRight,
+  FiEyeOff,
   FiRotateCcw,
   FiRotateCw,
 } from "react-icons/fi";
@@ -21,10 +22,20 @@ type PdfViewerProps = {
   path: string;
 };
 
+type RedSheetSize = {
+  width: number;
+  height: number;
+};
+
 type SiblingNavControlProps = {
   direction: "previous" | "next";
   file?: GitHubContentItem;
   loading: boolean;
+};
+
+const INITIAL_RED_SHEET_SIZE: RedSheetSize = {
+  width: 800,
+  height: 200,
 };
 
 function buildViewerHref(path: string) {
@@ -87,6 +98,10 @@ export default function PdfViewer({ path }: PdfViewerProps) {
   const [frameLoading, setFrameLoading] = useState(true);
   const [error, setError] = useState("");
   const [rotation, setRotation] = useState(0);
+  const [redSheetEnabled, setRedSheetEnabled] = useState(false);
+  const [redSheetSize, setRedSheetSize] = useState<RedSheetSize>(
+    INITIAL_RED_SHEET_SIZE
+  );
 
   const fileName = useMemo(() => {
     if (!path) return "ファイル";
@@ -134,6 +149,12 @@ export default function PdfViewer({ path }: PdfViewerProps) {
   const rotateRight = () => {
     setRotation((currentRotation) => (currentRotation + 90) % 360);
   };
+  const updateRedSheetWidth = (width: number) => {
+    setRedSheetSize((currentSize) => ({ ...currentSize, width }));
+  };
+  const updateRedSheetHeight = (height: number) => {
+    setRedSheetSize((currentSize) => ({ ...currentSize, height }));
+  };
 
   useEffect(() => {
     let ignore = false;
@@ -151,6 +172,8 @@ export default function PdfViewer({ path }: PdfViewerProps) {
         setError("");
         setFile(null);
         setRotation(0);
+        setRedSheetEnabled(false);
+        setRedSheetSize(INITIAL_RED_SHEET_SIZE);
 
         const response = await fetch(
           `/api/github/contents?path=${encodeURIComponent(path)}`,
@@ -329,6 +352,25 @@ export default function PdfViewer({ path }: PdfViewerProps) {
               右回転
             </button>
 
+            {fileType?.kind === "pdf" ? (
+              <button
+                type="button"
+                onClick={() => setRedSheetEnabled((enabled) => !enabled)}
+                aria-pressed={redSheetEnabled}
+                aria-label={
+                  redSheetEnabled ? "赤シートを解除" : "赤シートを有効化"
+                }
+                className={`focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold transition ${
+                  redSheetEnabled
+                    ? "border-red-300 bg-red-600 text-white shadow-sm hover:bg-red-700"
+                    : "border-slate-300 bg-white text-slate-700 hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                }`}
+              >
+                <FiEyeOff className="h-5 w-5" aria-hidden="true" />
+                赤シート
+              </button>
+            ) : null}
+
             <a
               href={`${rawFileUrl}&download=1`}
               className="focus-ring inline-flex min-h-11 items-center justify-center rounded-xl bg-blue-600 px-4 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
@@ -354,6 +396,52 @@ export default function PdfViewer({ path }: PdfViewerProps) {
             </span>
           ) : null}
         </div>
+
+        {fileType?.kind === "pdf" && redSheetEnabled ? (
+          <div className="mt-4 grid gap-3 border-t border-slate-100 pt-4 md:grid-cols-2">
+            <label className="grid gap-2 text-xs font-bold text-slate-600">
+              <span className="flex items-center justify-between gap-3">
+                <span>赤シート横幅</span>
+                <span className="tabular-nums text-slate-500">
+                  {redSheetSize.width}px
+                </span>
+              </span>
+              <input
+                type="range"
+                min="120"
+                max="1000"
+                step="20"
+                value={redSheetSize.width}
+                onChange={(event) =>
+                  updateRedSheetWidth(Number(event.currentTarget.value))
+                }
+                className="h-2 w-full cursor-pointer accent-red-600"
+                aria-label="赤シートの横幅"
+              />
+            </label>
+
+            <label className="grid gap-2 text-xs font-bold text-slate-600">
+              <span className="flex items-center justify-between gap-3">
+                <span>赤シート縦幅</span>
+                <span className="tabular-nums text-slate-500">
+                  {redSheetSize.height}px
+                </span>
+              </span>
+              <input
+                type="range"
+                min="80"
+                max="500"
+                step="10"
+                value={redSheetSize.height}
+                onChange={(event) =>
+                  updateRedSheetHeight(Number(event.currentTarget.value))
+                }
+                className="h-2 w-full cursor-pointer accent-red-600"
+                aria-label="赤シートの縦幅"
+              />
+            </label>
+          </div>
+        ) : null}
 
         <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <SiblingNavControl
@@ -398,6 +486,8 @@ export default function PdfViewer({ path }: PdfViewerProps) {
           </div>
         ) : fileType?.kind === "pdf" ? (
           <PdfDocumentViewer
+            redSheetEnabled={redSheetEnabled}
+            redSheetSize={redSheetSize}
             rotation={rotation}
             src={rawFileUrl}
             title={file?.name || fileName}

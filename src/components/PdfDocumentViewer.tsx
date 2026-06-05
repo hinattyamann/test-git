@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import type {
   PDFDocumentLoadingTask,
   PDFDocumentProxy,
@@ -12,6 +13,11 @@ type PdfDocumentViewerProps = {
   src: string;
   title: string;
   rotation: number;
+  redSheetEnabled: boolean;
+  redSheetSize: {
+    width: number;
+    height: number;
+  };
 };
 
 type PdfJsModule = typeof import("pdfjs-dist");
@@ -151,14 +157,35 @@ function PdfPageCanvas({
 }
 
 export default function PdfDocumentViewer({
+  redSheetEnabled,
+  redSheetSize,
   rotation,
   src,
   title,
 }: PdfDocumentViewerProps) {
   const { ref, width } = useElementWidth();
+  const redSheetRef = useRef<HTMLDivElement | null>(null);
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [redSheetVisible, setRedSheetVisible] = useState(false);
+
+  function moveRedSheet(event: PointerEvent<HTMLDivElement>) {
+    if (!redSheetEnabled || !redSheetRef.current) return;
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - bounds.left;
+    const y = event.clientY - bounds.top;
+
+    redSheetRef.current.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
+  }
+
+  function showRedSheet(event: PointerEvent<HTMLDivElement>) {
+    if (!redSheetEnabled) return;
+
+    moveRedSheet(event);
+    setRedSheetVisible(true);
+  }
 
   useEffect(() => {
     let canceled = false;
@@ -218,7 +245,13 @@ export default function PdfDocumentViewer({
   }, [src]);
 
   return (
-    <div ref={ref} className="min-h-[70vh] bg-slate-100 px-2 py-4 sm:px-4">
+    <div
+      ref={ref}
+      className="relative min-h-[70vh] overflow-hidden bg-slate-100 px-2 py-4 sm:px-4"
+      onPointerEnter={showRedSheet}
+      onPointerLeave={() => setRedSheetVisible(false)}
+      onPointerMove={moveRedSheet}
+    >
       {loading && (
         <div className="flex min-h-[60vh] items-center justify-center text-sm font-medium text-slate-500">
           PDFプレビューを読み込み中です...
@@ -244,6 +277,20 @@ export default function PdfDocumentViewer({
           ))}
         </div>
       )}
+
+      <div
+        ref={redSheetRef}
+        aria-hidden="true"
+        className={`pointer-events-none absolute left-0 top-0 z-20 rounded-2xl border border-red-700/20 bg-[#FB000B]/90 shadow-[0_18px_45px_rgba(127,29,29,0.18)] ring-1 ring-white/20 transition-opacity duration-100 ${
+          redSheetEnabled && redSheetVisible ? "opacity-100" : "opacity-0"
+        }`}
+        style={{
+          height: `${redSheetSize.height}px`,
+          mixBlendMode: "multiply",
+          willChange: "transform, opacity",
+          width: `${redSheetSize.width}px`,
+        }}
+      />
     </div>
   );
 }
