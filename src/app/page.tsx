@@ -47,6 +47,27 @@ export default async function HomePage() {
         </div>
 
         <section className="mt-12">
+          <div className="mb-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-blue-200 hover:shadow-md sm:p-6">
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+              <div>
+                <p className="text-xs font-bold text-blue-700">Study Tool</p>
+                <h2 className="mt-1 text-2xl font-black text-slate-950">
+                  英単語学習
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">
+                  登録済みの英単語から意味を答える学習ツール。
+                </p>
+              </div>
+
+              <Link
+                href="/english"
+                className="focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-700"
+              >
+                英単語を学習
+              </Link>
+            </div>
+          </div>
+
           <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
             <div>
               <p className="text-xs font-bold text-blue-700">Departments</p>
